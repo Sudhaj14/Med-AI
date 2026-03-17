@@ -71,7 +71,7 @@ export default function HealthTracker() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white text-black rounded-lg shadow-lg p-6">
       <h2 className="text-xl font-semibold mb-4">Health Tracker</h2>
       
       <div className="space-y-4">
@@ -86,7 +86,7 @@ export default function HealthTracker() {
                 unit: getUnitForType(type),
               }));
             }}
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 text-black border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="weight">Weight</option>
             <option value="blood_pressure">Blood Pressure</option>
@@ -99,7 +99,7 @@ export default function HealthTracker() {
             value={newMetric.value}
             onChange={(e) => setNewMetric(prev => ({ ...prev, value: e.target.value }))}
             placeholder={`Value (${newMetric.unit})`}
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 text-black border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function HealthTracker() {
           value={newMetric.notes}
           onChange={(e) => setNewMetric(prev => ({ ...prev, notes: e.target.value }))}
           placeholder="Notes (optional)"
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full text-black px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <button

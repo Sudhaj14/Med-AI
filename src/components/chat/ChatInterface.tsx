@@ -127,7 +127,7 @@ export default function ChatInterface() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Medical Chat</h2>
+      <h2 className="text-xl font-semibold text-black mb-4">Medical Chat</h2>
       
       <div className="h-96 overflow-y-auto mb-4 border rounded-lg p-4 bg-gray-50">
         {messages.length === 0 ? (
@@ -137,7 +137,7 @@ export default function ChatInterface() {
             <div key={index} className="mb-4">
               <div className="flex justify-between items-start mb-2">
                 <span className="font-medium text-blue-600">You:</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-800">
                   {new Date(msg.timestamp).toLocaleTimeString()}
                 </span>
               </div>
@@ -194,7 +194,7 @@ export default function ChatInterface() {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Ask about your health concerns..."
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 border text-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isLoading}
         />
         <button

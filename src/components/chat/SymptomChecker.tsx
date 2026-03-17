@@ -60,18 +60,18 @@ export default function SymptomChecker() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Symptom Checker</h2>
+      <h2 className="text-xl text-black font-semibold mb-4">Symptom Checker</h2>
       
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-black  text-sm font-medium mb-2">
             Enter your symptoms (comma-separated)
           </label>
           <textarea
             value={symptoms}
             onChange={(e) => setSymptoms(e.target.value)}
             placeholder="e.g., headache, fever, nausea, fatigue"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-black  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
           />
         </div>

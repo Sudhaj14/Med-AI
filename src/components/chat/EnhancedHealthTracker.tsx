@@ -123,7 +123,7 @@ export default function EnhancedHealthTracker() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Health Tracker</h2>
+      <h2 className="text-xl font-semibold text-black mb-4">Health Tracker</h2>
       
       <div className="flex space-x-2 mb-6">
         <button
@@ -161,7 +161,7 @@ export default function EnhancedHealthTracker() {
                   unit: getUnitForType(type),
                 }));
               }}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="weight">Weight</option>
               <option value="blood_pressure">Blood Pressure</option>
@@ -175,7 +175,7 @@ export default function EnhancedHealthTracker() {
               value={newMetric.value}
               onChange={(e) => setNewMetric(prev => ({ ...prev, value: e.target.value }))}
               placeholder={`Value (${newMetric.unit})`}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 text-black border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -184,7 +184,7 @@ export default function EnhancedHealthTracker() {
             value={newMetric.notes}
             onChange={(e) => setNewMetric(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Notes (optional)"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full text-black px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <button
@@ -244,20 +244,20 @@ export default function EnhancedHealthTracker() {
 
       {activeTab === 'medications' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid text-black grid-cols-2 gap-2">
             <input
               type="text"
               value={newMedication.name}
               onChange={(e) => setNewMedication(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Medication name"
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 text-black py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               type="text"
               value={newMedication.dosage}
               onChange={(e) => setNewMedication(prev => ({ ...prev, dosage: e.target.value }))}
               placeholder="Dosage (e.g., 10mg)"
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 text-black py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -267,13 +267,13 @@ export default function EnhancedHealthTracker() {
               value={newMedication.frequency}
               onChange={(e) => setNewMedication(prev => ({ ...prev, frequency: e.target.value }))}
               placeholder="Frequency (e.g., twice daily)"
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 text-black border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               type="time"
               value={newMedication.startTime}
               onChange={(e) => setNewMedication(prev => ({ ...prev, startTime: e.target.value }))}
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 text-black  py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -282,7 +282,7 @@ export default function EnhancedHealthTracker() {
             value={newMedication.notes}
             onChange={(e) => setNewMedication(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Notes (optional)"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full text-black px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <button
