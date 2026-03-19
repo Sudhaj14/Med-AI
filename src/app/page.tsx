@@ -1,103 +1,142 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
-import Link from 'next/link';
 
-export default function Home() {
-  const { data: session, status } = useSession();
+export default function RoleSelection() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/dashboard');
+    if (status === 'authenticated' && session?.user?.role) {
+      // Redirect to appropriate dashboard based on role
+      if (session.user.role === 'doctor') {
+        router.push('/doctor/dashboard');
+      } else {
+        router.push('/patient/dashboard');
+      }
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
+            <span className="text-white font-bold text-2xl">🏥</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="flex min-h-screen">
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-2xl w-full">
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
-              Medical Chatbot
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Your AI-powered healthcare assistant for personalized health guidance, symptom analysis, and health tracking.
-            </p>
-            
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600">🤖</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">AI-Powered Chat</h3>
-                  <p className="text-gray-600">Get intelligent health responses from Gemini AI</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600">🩺</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Symptom Checker</h3>
-                  <p className="text-gray-600">Analyze your symptoms and get health insights</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600">📊</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Health Tracking</h3>
-                  <p className="text-gray-600">Monitor your health metrics with interactive charts</p>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center px-4">
+      <div className="max-w-4xl w-full">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-white font-bold text-3xl">🏥</span>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            MediCare AI
+          </h1>
+          <p className="text-xl text-gray-600 mb-2">
+            Your Intelligent Healthcare Platform
+          </p>
+          <p className="text-gray-500">
+            Choose your role to get started with personalized healthcare experience
+          </p>
+        </div>
 
-            <div className="mt-8 space-x-4">
-              <Link
-                href="/auth/signin"
-                className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="inline-block px-6 py-3 border border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors"
-              >
-                Create Account
-              </Link>
+        {/* Role Selection Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Patient Card */}
+          <div 
+            onClick={() => router.push('/login/patient')}
+            className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-blue-100"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-2xl">👤</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Patient</h2>
+              <p className="text-gray-600 mb-6">
+                Access AI-powered health assistant, symptom checker, track health metrics, and book appointments with qualified doctors.
+              </p>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>AI Medical Chatbot</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Symptom Checker</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Health Metrics Tracking</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Appointment Booking</span>
+                </div>
+              </div>
+              
+              <button className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200">
+                Login as Patient
+              </button>
+            </div>
+          </div>
+
+          {/* Doctor Card */}
+          <div 
+            onClick={() => router.push('/login/doctor')}
+            className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-purple-100"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-2xl">👨‍⚕️</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Doctor</h2>
+              <p className="text-gray-600 mb-6">
+                Manage your practice, set availability slots, view patient appointments, and provide consultations through our platform.
+              </p>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Professional Profile</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Slot Management</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Appointment Dashboard</span>
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-gray-700">
+                  <span className="text-green-500">✓</span>
+                  <span>Patient Data Access</span>
+                </div>
+              </div>
+              
+              <button className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200">
+                Login as Doctor
+              </button>
             </div>
           </div>
         </div>
-        
-        <div className="hidden lg:flex flex-1 items-center justify-center p-8">
-          <div className="w-full max-w-md">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🏥</span>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Welcome to Your Health Assistant</h2>
-              </div>
-              <p className="text-gray-600 text-center">
-                Experience the future of healthcare with our intelligent chatbot that provides personalized health guidance and monitoring.
-              </p>
-            </div>
-          </div>
+
+        {/* Footer */}
+        <div className="text-center mt-12">
+          <p className="text-sm text-gray-500">
+            Secure • HIPAA Compliant • Available 24/7
+          </p>
         </div>
       </div>
     </div>

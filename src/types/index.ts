@@ -57,8 +57,79 @@ export interface MedicationReminder {
   lastTaken?: Date;
 }
 
+export interface Doctor {
+  id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  rating: number;
+  availableSlots: TimeSlot[];
+  image?: string;
+  education: string;
+  consultationFee: number;
+}
+
+export interface TimeSlot {
+  id: string;
+  date: string;
+  time: string;
+  available: boolean;
+}
+
+export interface Appointment {
+  id: string;
+  userId: string;
+  doctorId: string;
+  doctor: Doctor;
+  date: string;
+  time: string;
+  reason: string;
+  symptoms?: string[];
+  healthMetrics?: HealthMetric[];
+  chatHistory?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AppointmentBookingData {
+  doctorId: string;
+  date: string;
+  time: string;
+  reason: string;
+  symptoms?: string[];
+  healthMetrics?: HealthMetric[];
+  chatHistory?: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  role: 'patient' | 'doctor';
+  specialization?: string;
+  experience?: number;
+  consultationFee?: number;
+}
+
+export interface DoctorProfile extends AuthUser {
+  role: 'doctor';
+  specialization: string;
+  experience: number;
+  consultationFee: number;
+}
+
+export interface PatientProfile extends AuthUser {
+  role: 'patient';
+}
+
+export interface Slot {
+  id: string;
+  doctorId: string;
+  date: string;
+  time: string;
+  isBooked: boolean;
+  patientId?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

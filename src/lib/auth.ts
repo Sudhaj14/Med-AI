@@ -22,48 +22,48 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
-        name: { label: 'Name', type: 'text' },
+        role: { label: 'Role', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email) {
+        if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
         await connectDB();
 
-        // For registration (when name is provided)
-        if (credentials.name) {
-          const existingUser = await User.findOne({ email: credentials.email });
-          if (existingUser) {
-            throw new Error('User already exists');
-          }
-
-          const hashedPassword = await bcrypt.hash(credentials.password, 12);
-          const user = new User({
-            email: credentials.email,
-            name: credentials.name,
-          });
-
-          await user.save();
-          return {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name,
-          };
-        }
-
-        // For login
+        // Find user by email
         const user = await User.findOne({ email: credentials.email });
         if (!user) {
-          throw new Error('No user found');
+          throw new Error('No user found with this email');
         }
 
-        // Note: In a real app, you'd verify the password here
-        // For simplicity, we're skipping password verification in this demo
+        // Verify password for patients
+        if (user.role === 'patient') {
+          if (!user.password) {
+            throw new Error('Invalid password');
+          }
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isPasswordValid) {
+            throw new Error('Invalid password');
+          }
+        }
+
+        // For doctors, we can either check password or allow OAuth
+        if (user.role === 'doctor' && user.password) {
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isPasswordValid) {
+            throw new Error('Invalid password');
+          }
+        }
+
         return {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
+          role: user.role,
+          specialization: user.specialization,
+          experience: user.experience,
+          consultationFee: user.consultationFee,
         };
       },
     }),
@@ -75,12 +75,20 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
+        token.specialization = user.specialization;
+        token.experience = user.experience;
+        token.consultationFee = user.consultationFee;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
+        session.user.role = token.role as 'patient' | 'doctor';
+        session.user.specialization = token.specialization as string;
+        session.user.experience = token.experience as number;
+        session.user.consultationFee = token.consultationFee as number;
       }
       return session;
     },

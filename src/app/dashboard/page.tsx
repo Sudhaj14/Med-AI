@@ -1,23 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import ChatTab from '@/components/dashboard/ChatTab';
 import SymptomTab from '@/components/dashboard/SymptomTab';
 import MetricsTab from '@/components/dashboard/MetricsTab';
+import AppointmentSummary from '@/components/dashboard/AppointmentSummary';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('chat');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [recentSymptoms, setRecentSymptoms] = useState<string[]>([]);
+  const [recommendedDoctor, setRecommendedDoctor] = useState<string>('');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
     }
   }, [status, router]);
+
+  // Get data from localStorage (passed from other modules)
+  useEffect(() => {
+    const savedSymptoms = localStorage.getItem('recentSymptoms');
+    const savedRecommendation = localStorage.getItem('recommendedDoctor');
+    
+    if (savedSymptoms) {
+      setRecentSymptoms(JSON.parse(savedSymptoms));
+    }
+    if (savedRecommendation) {
+      setRecommendedDoctor(savedRecommendation);
+    }
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -39,6 +54,8 @@ export default function Dashboard() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'overview':
+        return <AppointmentSummary />;
       case 'chat':
         return <ChatTab />;
       case 'symptoms':
@@ -46,8 +63,20 @@ export default function Dashboard() {
       case 'metrics':
         return <MetricsTab />;
       default:
-        return <ChatTab />;
+        return <AppointmentSummary />;
     }
+  };
+
+  const handleBookAppointment = () => {
+    // Pass current data to appointment booking
+    if (recentSymptoms.length > 0) {
+      localStorage.setItem('appointmentSymptoms', JSON.stringify(recentSymptoms));
+    }
+    if (recommendedDoctor) {
+      localStorage.setItem('appointmentSuggestedSpecialization', recommendedDoctor);
+    }
+    
+    router.push('/book-appointment');
   };
 
   return (
@@ -72,6 +101,7 @@ export default function Dashboard() {
             {/* Navigation Tabs */}
             <nav className="hidden md:flex space-x-1">
               {[
+                { id: 'overview', label: 'Overview', icon: '📋' },
                 { id: 'chat', label: 'AI Chatbot', icon: '🤖' },
                 { id: 'symptoms', label: 'Symptom Checker', icon: '🩺' },
                 { id: 'metrics', label: 'Health Metrics', icon: '📊' },
@@ -100,6 +130,7 @@ export default function Dashboard() {
                 onChange={(e) => setActiveTab(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
+                <option value="overview">📋 Overview</option>
                 <option value="chat">🤖 AI Chatbot</option>
                 <option value="symptoms">🩺 Symptom Checker</option>
                 <option value="metrics">📊 Health Metrics</option>
@@ -108,6 +139,15 @@ export default function Dashboard() {
 
             {/* Profile Section */}
             <div className="flex items-center space-x-4">
+              {/* Book Appointment Button */}
+              <button
+                onClick={handleBookAppointment}
+                className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-teal-700 shadow-lg transition-all duration-200"
+              >
+                <span className="text-lg">📅</span>
+                <span>Book Appointment</span>
+              </button>
+
               <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">
                   {session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -126,34 +166,50 @@ export default function Dashboard() {
         </div>
       </header>
 
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          
-          <div className="flex space-x-2 mb-6">
-            {[
-              { id: 'chat', label: 'AI Chatbot', icon: '🤖', color: 'blue' },
-              { id: 'symptoms', label: 'Symptom Checker', icon: '🩺', color: 'green' },
-              { id: 'metrics', label: 'Health Metrics', icon: '📊', color: 'purple' },
-            ].map((tab) => (
-              <div
-                key={tab.id}
-                className={`
-                  px-4 py-2 rounded-lg text-sm font-medium
-                  ${activeTab === tab.id 
-                    ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg` 
-                    : 'bg-white text-gray-700'
-                  }
-                `}
-              >
-                <span className="text-lg mr-2">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Mobile Book Appointment Button */}
+      <div className="md:hidden bg-white border-b border-purple-100 px-4 py-3">
+        <button
+          onClick={handleBookAppointment}
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-teal-700 shadow-lg transition-all duration-200"
+        >
+          <span className="text-lg">📅</span>
+          <span>Book Appointment</span>
+        </button>
+      </div>
 
-        
+      {/* Tab Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Recommended Appointment Alert */}
+        {(recentSymptoms.length > 0 || recommendedDoctor) && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm">💡</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Recommended Appointment</h3>
+                {recentSymptoms.length > 0 && (
+                  <p className="text-sm text-blue-800 mb-1">
+                    Based on your recent symptoms: <strong>{recentSymptoms.join(', ')}</strong>
+                  </p>
+                )}
+                {recommendedDoctor && (
+                  <p className="text-sm text-blue-800 mb-2">
+                    Recommended specialist: <strong>{recommendedDoctor}</strong>
+                  </p>
+                )}
+                <button
+                  onClick={handleBookAppointment}
+                  className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Book Now →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Tab Content */}
         {renderTabContent()}
       </main>
     </div>

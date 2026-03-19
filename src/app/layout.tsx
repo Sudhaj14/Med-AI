@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Medical Chatbot",
-  description: "AI-powered healthcare assistant",
+  title: "MediCare AI - Advanced Telemedicine Platform",
+  description: "AI-powered healthcare platform with video consultations, multilingual support, and offline capabilities",
 };
 
 export default function RootLayout({

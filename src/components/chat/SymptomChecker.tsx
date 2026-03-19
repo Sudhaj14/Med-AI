@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SymptomResult {
   symptoms: string[];
@@ -11,6 +12,7 @@ interface SymptomResult {
 }
 
 export default function SymptomChecker() {
+  const { t } = useTranslation();
   const [symptoms, setSymptoms] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SymptomResult | null>(null);
@@ -18,32 +20,69 @@ export default function SymptomChecker() {
 
   const analyzeSymptoms = async () => {
     if (!symptoms.trim()) {
-      setError('Please enter your symptoms');
+      setError(t('pleaseEnterSymptoms', 'Please enter your symptoms'));
       return;
     }
 
     setIsAnalyzing(true);
-    setError('');
-
     try {
-      const symptomsArray = symptoms.split(',').map(s => s.trim()).filter(s => s);
-      
+      const symptomsArray = symptoms
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       const response = await fetch('/api/symptoms', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms: symptomsArray }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setResult(data);
+        
+        // Store symptoms for appointment booking
+        localStorage.setItem('recentSymptoms', JSON.stringify(symptomsArray));
+        
+        // Store recommended doctor specialization
+        if (data.suggestedConditions && data.suggestedConditions.length > 0) {
+          let recommendedSpecialization = 'General Practitioner';
+          
+          // Simple mapping of conditions to specializations
+          const conditionToSpecialization: { [key: string]: string } = {
+            'heart': 'Cardiologist',
+            'skin': 'Dermatologist',
+            'brain': 'Neurologist',
+            'child': 'Pediatrician',
+            'stomach': 'Gastroenterologist',
+            'bone': 'Orthopedic',
+            'mental': 'Psychiatrist',
+          };
+          
+          const conditions = data.suggestedConditions.join(' ').toLowerCase();
+          for (const [key, specialization] of Object.entries(conditionToSpecialization)) {
+            if (conditions.includes(key)) {
+              recommendedSpecialization = specialization;
+              break;
+            }
+          }
+          
+          localStorage.setItem('recommendedDoctor', recommendedSpecialization);
+        }
+        
+        // Show appointment suggestion
+        setTimeout(() => {
+          if (confirm(t('bookAfterSymptomSuggestion', 'Based on your symptoms, would you like to book an appointment with a recommended doctor?'))) {
+            window.location.href = '/book-appointment';
+          }
+        }, 2000);
       } else {
-        setError('Failed to analyze symptoms');
+        const err = await response.json().catch(() => ({}));
+        setError(err?.error || t('failedToAnalyzeSymptoms', 'Failed to analyze symptoms. Please try again.'));
       }
     } catch (error) {
-      setError('An error occurred while analyzing symptoms');
+      console.error('Error analyzing symptoms:', error);
+      setError(t('failedToAnalyzeSymptoms', 'Failed to analyze symptoms. Please try again.'));
     } finally {
       setIsAnalyzing(false);
     }
@@ -60,17 +99,17 @@ export default function SymptomChecker() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl text-black font-semibold mb-4">Symptom Checker</h2>
+      <h2 className="text-xl text-black font-semibold mb-4">{t('symptomChecker', 'Symptom Checker')}</h2>
       
       <div className="space-y-4">
         <div>
           <label className="block text-black  text-sm font-medium mb-2">
-            Enter your symptoms (comma-separated)
+            {t('enterSymptomsCommaSeparated', 'Enter your symptoms (comma-separated)')}
           </label>
           <textarea
             value={symptoms}
             onChange={(e) => setSymptoms(e.target.value)}
-            placeholder="e.g., headache, fever, nausea, fatigue"
+            placeholder={t('symptomsPlaceholder', 'e.g., headache, fever, nausea, fatigue')}
             className="w-full px-3 py-2 text-black  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
           />
@@ -87,7 +126,7 @@ export default function SymptomChecker() {
           disabled={isAnalyzing}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {isAnalyzing ? 'Analyzing...' : 'Analyze Symptoms'}
+          {isAnalyzing ? t('analyzing', 'Analyzing...') : t('analyzeSymptoms', 'Analyze Symptoms')}
         </button>
 
         {result && (
