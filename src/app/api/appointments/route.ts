@@ -9,6 +9,7 @@ import User from '@/lib/models/User';
 import Slot from '@/lib/models/Slot';
 
 export async function POST(request: NextRequest) {
+  let bookedSlot: any = null; // To track if we successfully booked a slot
   try {
     const session = await getServerSession(authOptions);
     
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       },
       message: 'Appointment booked successfully!' 
     });
-  } catch (error) {
+  } catch (error:any) {
     // If we managed to lock the slot but appointment save failed, revert it.
     if (bookedSlot?._id) {
       try {
