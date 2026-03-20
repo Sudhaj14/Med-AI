@@ -5,25 +5,32 @@ declare module 'next-auth' {
     user: {
       id: string;
       email?: string | null;
-      role?: string;
       name?: string | null;
       image?: string | null;
-      role: 'patient' | 'doctor';
+      role: 'patient' | 'doctor'; // ✅ ONLY this
+      specialization?: string;
+      experience?: number;
+      consultationFee?: number;
     };
   }
 
   interface User {
     id: string;
-    role?: string;
     email: string;
     name: string;
-     role: 'patient' | 'doctor';
+    role: 'patient' | 'doctor'; // ✅ ONLY this
+    specialization?: string;
+    experience?: number;
+    consultationFee?: number;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
-    role: 'patient' | 'doctor'; 
+    role: 'patient' | 'doctor';
+    specialization?: string;
+    experience?: number;
+    consultationFee?: number;
   }
 }

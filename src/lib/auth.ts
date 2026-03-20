@@ -60,8 +60,9 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
-          role: user.role,
-          specialization: user.specialization,
+role: (user.role === 'doctor' || user.role === 'patient')
+  ? user.role
+  : 'patient',          specialization: user.specialization,
           experience: user.experience,
           consultationFee: user.consultationFee,
         };
@@ -74,12 +75,19 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.specialization = user.specialization;
-        token.experience = user.experience;
-        token.consultationFee = user.consultationFee;
-      }
+  token.id = user.id;
+
+  // ✅ FIX: ensure valid role
+  if (user.role === 'doctor' || user.role === 'patient') {
+    token.role = user.role;
+  } else {
+    token.role = 'patient'; // fallback (safe default)
+  }
+
+  token.specialization = user.specialization;
+  token.experience = user.experience;
+  token.consultationFee = user.consultationFee;
+}
       return token;
     },
     async session({ session, token }) {
@@ -95,7 +103,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
+    newUser: '/auth/signup',
   },
 };
 
