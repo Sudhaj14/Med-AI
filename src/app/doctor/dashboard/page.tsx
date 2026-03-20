@@ -5,40 +5,28 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import DashboardShell from '@/components/layout/DashboardShell';
-type Appointment = {
-  id?: string;
-  _id?: string;
-  status: string;
-  doctor?: {
-    name?: string;
-  };
-  patientName?: string;
-  patientEmail?: string;
-  date: string;
-  time: string;
-  reason: string;
-  symptoms?: string[];
-  callStartTime?: string;
-};
+import { Appointment } from '@/types/video';
+
 export default function DoctorDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
-const [appointments, setAppointments] = useState<Appointment[]>([]);  const [slots, setSlots] = useState([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [slots, setSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Redirect if not authenticated or not a doctor
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login/doctor');
-    } else if (status === 'authenticated' && session?.user?.role !== 'doctor') {
+    } else if (status === 'authenticated' && (session?.user as any)?.role !== 'doctor') {
       router.push('/');
     }
   }, [status, session, router]);
 
   // Load doctor data
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'doctor') {
+    if (status === 'authenticated' && (session?.user as any)?.role === 'doctor') {
       loadDoctorData();
     }
   }, [status, session]);

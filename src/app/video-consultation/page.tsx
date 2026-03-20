@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VideoCallManager from '@/components/video/VideoCallManager';
+import { Appointment } from '@/types/video';
 
 export default function VideoConsultationPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function VideoConsultationPage() {
     }
   };
 
-  const handleSelectAppointment = (appointment: any) => {
+  const handleSelectAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
   };
 

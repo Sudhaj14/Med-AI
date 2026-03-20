@@ -22,7 +22,7 @@ export default function PatientDashboard() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login/patient');
-    } else if (status === 'authenticated' && session?.user?.role !== 'patient') {
+    } else if (status === 'authenticated' && (session?.user as any)?.role !== 'patient') {
       router.push('/');
     }
   }, [status, session, router]);

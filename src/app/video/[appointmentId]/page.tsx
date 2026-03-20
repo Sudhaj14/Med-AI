@@ -38,8 +38,7 @@ export default function VideoAppointmentPage() {
   return (
     <VideoCallScreen
       appointmentId={appointmentId}
-      role={session.user.role}
-      onEndCall={() => {
+role={session.user.role as 'patient' | 'doctor'}      onEndCall={() => {
         if (session.user.role === 'doctor') router.push('/doctor/dashboard');
         else router.push('/patient/dashboard');
       }}

@@ -2,11 +2,12 @@
 
 import { useSearchParams } from 'next/navigation';
 import VideoCallManager from '@/components/video/VideoCallManager';
+import { VideoCallParams } from '@/types/video';
 
 export default function VideoCallPage() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
-  const role = searchParams.get('role'); // 'doctor' or 'patient'
+  const role = searchParams.get('role') as VideoCallParams['role']; // 'doctor' or 'patient'
 
   if (!appointmentId || !role) {
     return (

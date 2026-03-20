@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SimplePeer from 'simple-peer';
+import { Appointment } from '@/types/video';
 
 interface VideoCallManagerProps {
   appointmentId?: string;
@@ -20,7 +21,7 @@ export default function VideoCallManager({ appointmentId, isDoctor = false }: Vi
   const [isConnected, setIsConnected] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'ended'>('idle');
-  const [appointment, setAppointment] = useState<any>(null);
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -73,7 +74,7 @@ export default function VideoCallManager({ appointmentId, isDoctor = false }: Vi
       const response = await fetch(`/api/appointments/${currentAppointmentId}`);
       if (response.ok) {
         const data = await response.json();
-        setAppointment(data.appointment);
+        setAppointment(data.appointment as Appointment);
       }
     } catch (error) {
       console.error('Error fetching appointment:', error);
