@@ -6,10 +6,10 @@ import { authOptions } from '@/lib/auth';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params; // ✅ FIX
 
     await connectDB();
 
@@ -22,7 +22,6 @@ export async function DELETE(
       );
     }
 
-    // Don't allow deletion of booked slots
     if (slot.isBooked) {
       return NextResponse.json(
         { error: 'Cannot delete booked slot' },
@@ -47,7 +46,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -56,7 +55,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await context.params; // ✅ FIX
     const { date, time } = await request.json();
 
     if (!date || !time) {
@@ -70,12 +69,10 @@ export async function PUT(
       return NextResponse.json({ error: 'Slot not found' }, { status: 404 });
     }
 
-    // Only the owning doctor can edit their slots
     if (slot.doctorId.toString() !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Prevent editing booked slots
     if (slot.isBooked) {
       return NextResponse.json(
         { error: 'Cannot edit booked slot' },
@@ -83,7 +80,6 @@ export async function PUT(
       );
     }
 
-    // Prevent duplicates after edit
     const conflict = await Slot.findOne({
       doctorId: slot.doctorId,
       date,
