@@ -6,9 +6,22 @@ const HOST = process.env.SOCKET_HOST || '0.0.0.0';
 
 const SOCKET_IO_PATH = process.env.SOCKET_IO_PATH || '/socket.io';
 const SOCKET_CORS_ORIGIN = process.env.SOCKET_CORS_ORIGIN || '*';
+// In this app we don't need cookies/credentials for signaling, so keep it permissive.
 const SOCKET_CORS_CREDENTIALS = SOCKET_CORS_ORIGIN !== '*';
 
 const httpServer = http.createServer();
+
+// Basic health response so platforms can verify the service is alive.
+httpServer.on('request', (req, res) => {
+  if (req.url === '/' || req.url === '/health' || req.url === '/healthz') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+    return;
+  }
+  // Let socket.io handle the upgrade/handshake routes.
+  res.writeHead(404);
+  res.end();
+});
 
 const io = new Server(httpServer, {
   path: SOCKET_IO_PATH,
@@ -17,7 +30,7 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST'],
     credentials: SOCKET_CORS_CREDENTIALS,
   },
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],
 });
 
 function roomName(appointmentId) {

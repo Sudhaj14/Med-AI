@@ -87,9 +87,10 @@ export function useVideoCall({ appointmentId, role }: UseVideoCallOptions) {
     const socket =
       socketRef.current ??
       io(signalingUrl, {
-        // Allow polling as a fallback in case websocket is blocked or unavailable.
-        transports: ['websocket', 'polling'],
+        // Try polling first; some hosting setups block direct websocket upgrades.
+        transports: ['polling', 'websocket'],
         path: process.env.NEXT_PUBLIC_SIGNALING_PATH || '/socket.io',
+        timeout: 20000,
       });
 
     socketRef.current = socket;
