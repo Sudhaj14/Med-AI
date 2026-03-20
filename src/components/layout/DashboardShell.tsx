@@ -18,6 +18,7 @@ export default function DashboardShell({
   navItems,
   activeId,
   onSelect,
+  showLanguageSwitcher = true,
   children,
 }: {
   title: string;
@@ -25,6 +26,7 @@ export default function DashboardShell({
   navItems: DashboardNavItem[];
   activeId: string;
   onSelect: (id: string) => void;
+  showLanguageSwitcher?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -164,7 +166,7 @@ export default function DashboardShell({
             </div>
 
             <div className="flex items-center gap-3">
-              <LanguageSwitcher />
+              {showLanguageSwitcher ? <LanguageSwitcher /> : null}
 
               <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
                 <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center font-semibold text-slate-700">

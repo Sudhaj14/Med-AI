@@ -24,8 +24,10 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    // Check if the slot is still available
-    const existingSlot = await Slot.findOne({ 
+    let bookedSlot: any = null;
+
+    // Check if the slot exists
+    const existingSlot = await Slot.findOne({
       doctorId, 
       date, 
       time 
@@ -36,6 +38,17 @@ export async function POST(request: NextRequest) {
     }
     
     if (existingSlot.isBooked) {
+      return NextResponse.json({ error: 'This time slot is already booked' }, { status: 409 });
+    }
+
+    // Atomically mark the slot as booked to prevent double-booking
+    bookedSlot = await Slot.findOneAndUpdate(
+      { doctorId, date, time, isBooked: false },
+      { $set: { isBooked: true, patientId: session.user.id } },
+      { new: true }
+    );
+
+    if (!bookedSlot) {
       return NextResponse.json({ error: 'This time slot is already booked' }, { status: 409 });
     }
 
@@ -92,20 +105,6 @@ export async function POST(request: NextRequest) {
 
     await appointment.save();
 
-    // Mark the slot as booked
-    const slot = await Slot.findOne({ 
-      doctorId, 
-      date, 
-      time, 
-      isBooked: false 
-    });
-    
-    if (slot) {
-      slot.isBooked = true;
-      slot.patientId = session.user.id;
-      await slot.save();
-    }
-
     return NextResponse.json({ 
       success: true, 
       appointment: {
@@ -122,6 +121,18 @@ export async function POST(request: NextRequest) {
       message: 'Appointment booked successfully!' 
     });
   } catch (error) {
+    // If we managed to lock the slot but appointment save failed, revert it.
+    if (bookedSlot?._id) {
+      try {
+        await Slot.findByIdAndUpdate(bookedSlot._id, {
+          $set: { isBooked: false },
+          $unset: { patientId: 1 },
+        });
+      } catch (revertError) {
+        console.error('Failed to revert slot booking:', revertError);
+      }
+    }
+
     console.error('Error booking appointment:', error);
     console.error('Error details:', {
       message: error.message,
@@ -166,6 +177,7 @@ export async function GET(request: NextRequest) {
     if (doctorId) {
       // Get appointments for a specific doctor
       appointments = await Appointment.find({ doctorId })
+        .populate('userId', 'name email')
         .sort({ createdAt: -1 });
     } else {
       // Get appointments for the current user (patient)
@@ -174,23 +186,32 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      appointments: appointments.map(apt => ({
-        id: apt._id,
-        userId: apt.userId,
-        doctorId: apt.doctorId,
-        doctor: apt.doctor,
-        date: apt.date,
-        time: apt.time,
-        reason: apt.reason,
-        symptoms: apt.symptoms,
-        status: apt.status,
-        callStartTime: apt.callStartTime,
-        callEndTime: apt.callEndTime,
-        callDuration: apt.callDuration,
-        consultationFee: apt.doctor?.consultationFee || 0,
-        createdAt: apt.createdAt,
-        updatedAt: apt.updatedAt
-      }))
+      appointments: appointments.map((apt) => {
+        const patient: any = (apt as any).userId;
+        const patientId =
+          patient?._id?.toString?.() || patient?.toString?.() || patient || apt.userId;
+
+        return {
+          id: apt._id,
+          userId: patientId,
+          patientId,
+          doctorId: apt.doctorId,
+          doctor: apt.doctor,
+          patientName: patient?.name || undefined,
+          patientEmail: patient?.email || undefined,
+          date: apt.date,
+          time: apt.time,
+          reason: apt.reason,
+          symptoms: apt.symptoms,
+          status: apt.status,
+          callStartTime: apt.callStartTime,
+          callEndTime: apt.callEndTime,
+          callDuration: apt.callDuration,
+          consultationFee: apt.doctor?.consultationFee || 0,
+          createdAt: apt.createdAt,
+          updatedAt: apt.updatedAt,
+        };
+      })
     });
   } catch (error) {
     console.error('Error getting appointments:', error);

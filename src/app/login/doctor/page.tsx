@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
-import { useTranslation } from 'react-i18next';
 
 export default function DoctorLogin() {
-  const { t } = useTranslation();
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLogin, setIsLogin] = useState(true);
@@ -134,7 +132,7 @@ export default function DoctorLogin() {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('name')}
+                    Name
                   </label>
                   <input
                     type="text"
@@ -149,7 +147,7 @@ export default function DoctorLogin() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('specialization')}
+                    Specialization
                   </label>
                   <input
                     type="text"
@@ -164,7 +162,7 @@ export default function DoctorLogin() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('experience')} (years)
+                    Experience (years)
                   </label>
                   <input
                     type="number"
@@ -181,7 +179,7 @@ export default function DoctorLogin() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('consultationFee')} (₹)
+                    Consultation Fee (₹)
                   </label>
                   <input
                     type="number"
@@ -199,7 +197,7 @@ export default function DoctorLogin() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('email')}
+                Email
               </label>
               <input
                 type="email"
@@ -214,7 +212,7 @@ export default function DoctorLogin() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('password')}
+                Password
               </label>
               <input
                 type="password"
@@ -230,7 +228,7 @@ export default function DoctorLogin() {
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('confirmPassword')}
+                  Confirm Password
                 </label>
                 <input
                   type="password"

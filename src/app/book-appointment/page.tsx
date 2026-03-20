@@ -117,6 +117,22 @@ export default function BookAppointment() {
       });
 
       if (response.ok) {
+        // Immediately remove the booked slot from the local "Available Slots" UI
+        const bookedSlotId = selectedSlot?.id;
+        if (bookedSlotId && selectedDoctor) {
+          setDoctors((prev) =>
+            prev.map((doc) =>
+              doc.id === selectedDoctor.id
+                ? { ...doc, availableSlots: doc.availableSlots.filter((s) => s.id !== bookedSlotId) }
+                : doc
+            )
+          );
+          setSelectedDoctor((prev) =>
+            prev ? { ...prev, availableSlots: prev.availableSlots.filter((s) => s.id !== bookedSlotId) } : prev
+          );
+          setSelectedSlot(null);
+        }
+
         // Clear passed data after successful booking
         localStorage.removeItem('appointmentSymptoms');
         localStorage.removeItem('appointmentChatHistory');

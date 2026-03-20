@@ -137,6 +137,17 @@ export default function AppointmentSummary() {
                           <p className="text-sm font-medium text-gray-600">
                             ${appointment.doctor.consultationFee}
                           </p>
+                          {appointment.status === 'scheduled' && (
+                            <button
+                              onClick={() => {
+                                const id = (appointment as any)._id || appointment.id;
+                                if (id) router.push(`/video/${id}`);
+                              }}
+                              className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                            >
+                              Join Call
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

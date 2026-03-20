@@ -115,9 +115,20 @@ export default function PharmacySearch({ prescription }: { prescription?: string
       if (response.ok) {
         const data = await response.json();
         const apiPharmacies: Pharmacy[] = data.pharmacies || [];
+
+        const termLower = (medicine || searchTerm).trim().toLowerCase();
+        const cityLower = city.trim().toLowerCase();
+
+        const filteredDummy = dummyPharmacies.filter((p) => {
+          if (cityLower && p.address.city.toLowerCase() !== cityLower) return false;
+          if (!termLower) return true;
+          const medName = p.availableMedicine?.name?.toLowerCase() || '';
+          return medName.includes(termLower);
+        });
+
         if (apiPharmacies.length === 0) {
           // Fallback to dummy data so UI is not empty in demo mode
-          setPharmacies(dummyPharmacies);
+          setPharmacies(filteredDummy);
         } else {
           setPharmacies(apiPharmacies);
         }
@@ -127,7 +138,19 @@ export default function PharmacySearch({ prescription }: { prescription?: string
       }
     } catch (error) {
       console.error('Error searching pharmacies:', error);
-      setError('Failed to search pharmacies. Please try again.');
+      // Demo fallback when backend is empty/unavailable
+      const termLower = (medicine || searchTerm).trim().toLowerCase();
+      const cityLower = city.trim().toLowerCase();
+      const filteredDummy = dummyPharmacies.filter((p) => {
+        if (cityLower && p.address.city.toLowerCase() !== cityLower) return false;
+        if (!termLower) return true;
+        const medName = p.availableMedicine?.name?.toLowerCase() || '';
+        return medName.includes(termLower);
+      });
+
+      setError('Failed to search pharmacies. Showing demo results instead.');
+      setPharmacies(filteredDummy);
+      setShowResults(true);
     } finally {
       setLoading(false);
     }

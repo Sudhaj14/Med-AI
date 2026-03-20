@@ -16,7 +16,7 @@ export default function PatientDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('appointments');
 
   // Redirect if not authenticated or not a patient
   useEffect(() => {
@@ -67,38 +67,28 @@ export default function PatientDashboard() {
         return <PharmacySearch />;
       case 'video':
         return (
-          <div className="p-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Video Consultation</h3>
-              <p className="text-gray-600 mb-6">Start a video call with your doctor for professional healthcare consultation.</p>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                <h4 className="font-medium text-blue-900 mb-2">📹 How it works:</h4>
-                <ul className="text-sm text-blue-800 space-y-1 text-left">
-                  <li>• Book an appointment first</li>
-                  <li>• Wait for doctor to start the call</li>
-                  <li>• Join video call at appointment time</li>
-                  <li>• Healthcare-grade encryption</li>
-                </ul>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="font-semibold text-slate-900">{t('videoConsultation', 'Video Consultation')}</div>
+              <div className="mt-1 text-sm text-slate-600">
+                Join your scheduled video call from your appointment list. The “Join Call” button uses the appointment ID.
               </div>
-              
-              <div className="space-y-4">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
-                  onClick={() => {
-                    // Check for active appointments and redirect to video call
-                    router.push('/video-consultation');
-                  }}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+                  onClick={() => setActiveTab('appointments')}
+                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
-                  Enter Video Consultation
+                  View Appointments
                 </button>
-                
-                <div className="text-sm text-gray-500">
-                  <p>Click to enter the video consultation room.</p>
-                  <p>If you have an active appointment, you can join the call.</p>
-                </div>
+                <button
+                  onClick={() => router.push('/book-appointment')}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                >
+                  Book Appointment
+                </button>
               </div>
             </div>
+            <AppointmentSummary />
           </div>
         );
       default:

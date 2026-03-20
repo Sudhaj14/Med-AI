@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import DashboardShell from '@/components/layout/DashboardShell';
 
 export default function DoctorDashboard() {
-  const { t } = useTranslation();
   const router = useRouter();
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
@@ -64,7 +62,7 @@ export default function DoctorDashboard() {
           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
             <span className="text-white font-bold text-2xl">👨‍⚕️</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('loading')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
         </div>
       </div>
     );
@@ -75,12 +73,12 @@ export default function DoctorDashboard() {
   }
 
   const tabs = [
-    { id: 'overview', label: t('dashboard', 'Dashboard'), icon: '📊' },
-    { id: 'appointments', label: t('appointments'), icon: '📅' },
-    { id: 'slots', label: t('slotManagement', 'Slot Management'), icon: '⏰' },
-    { id: 'video', label: t('videoConsultation', 'Video Consultation'), icon: '📹' },
-    { id: 'prescriptions', label: t('prescription', 'Prescriptions'), icon: '📝' },
-    { id: 'profile', label: t('profile'), icon: '👨‍⚕️' },
+    { id: 'overview', label: 'Dashboard', icon: '📊' },
+    { id: 'appointments', label: 'Appointments', icon: '📅' },
+    { id: 'slots', label: 'Slot Management', icon: '⏰' },
+    { id: 'video', label: 'Video Consultation', icon: '📹' },
+    { id: 'prescriptions', label: 'Prescriptions', icon: '📝' },
+    { id: 'profile', label: 'Profile', icon: '👨‍⚕️' },
   ];
 
   const renderTabContent = () => {
@@ -95,7 +93,7 @@ export default function DoctorDashboard() {
         return (
           <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="font-semibold text-slate-900 mb-4">{t('videoConsultation', 'Video Consultation')}</div>
+              <div className="font-semibold text-slate-900 mb-4">Video Consultation</div>
               <div className="text-sm text-slate-600 mb-4">
                 Start video calls with your scheduled appointments. Click "Start Call" to begin a consultation.
               </div>
@@ -165,19 +163,7 @@ export default function DoctorDashboard() {
           </div>
         );
       case 'prescriptions':
-        return (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="font-semibold text-slate-900">{t('prescription', 'Prescriptions')}</div>
-              <div className="mt-1 text-sm text-slate-600">
-                Prescription writing UI will be placed here next (linked to appointment → saved in records → shown in pharmacy).
-              </div>
-            </div>
-            <div className="text-sm text-slate-600">
-              For now, use the “Start Call” buttons in appointments to open video consultation.
-            </div>
-          </div>
-        );
+        return <PrescriptionsTab appointments={appointments} doctorId={session.user.id} />;
       case 'profile':
         return <DoctorProfile doctor={session.user} />;
       default:
@@ -193,6 +179,7 @@ export default function DoctorDashboard() {
         navItems={tabs}
         activeId={activeTab}
         onSelect={setActiveTab}
+        showLanguageSwitcher={false}
       >
         {loading ? (
           <div className="text-center py-12">
@@ -208,11 +195,173 @@ export default function DoctorDashboard() {
   );
 }
 
+function PrescriptionsTab({ appointments, doctorId }: any) {
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [savedByAppointmentId, setSavedByAppointmentId] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [saving, setSaving] = useState(false);
+
+  const candidateAppointments = (appointments || []).filter(
+    (a: any) => a.status === 'scheduled' || a.status === 'completed'
+  );
+
+  const selectedAppointment = candidateAppointments.find(
+    (a: any) => a.id === selectedAppointmentId || a._id === selectedAppointmentId
+  );
+
+  const handleSave = async () => {
+    if (!selectedAppointmentId) return;
+    if (!draft.trim()) {
+      alert('Please write a prescription before saving.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch('/api/prescriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointmentId: selectedAppointmentId,
+          doctorId,
+          patientName: selectedAppointment?.patientName,
+          content: draft,
+        }),
+      });
+
+      if (response.ok) {
+        setSavedByAppointmentId((p) => ({ ...p, [selectedAppointmentId]: true }));
+        setDraft('');
+        alert('Prescription saved to records.');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(data?.error || 'Failed to save prescription.');
+      }
+    } catch (error) {
+      console.error('Error saving prescription:', error);
+      alert('Failed to save prescription.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="font-semibold text-slate-900">Write Prescription</div>
+        <div className="mt-1 text-sm text-slate-600">
+          Appointment → Prescription Form → Save → Store in Records
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <h4 className="font-semibold text-gray-900 mb-3">Appointments</h4>
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {candidateAppointments.length > 0 ? (
+              candidateAppointments.map((apt: any) => {
+                const id = apt.id || apt._id;
+                const isSelected = id === selectedAppointmentId;
+                const isSaved = !!savedByAppointmentId[id];
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setSelectedAppointmentId(id);
+                      setDraft('');
+                    }}
+                    className={[
+                      'w-full text-left border rounded-lg p-3 transition-colors',
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50',
+                    ].join(' ')}
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {apt.patientName || 'Unknown'}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {apt.date} at {apt.time}
+                        </div>
+                        <div className="text-xs text-gray-500">{apt.reason}</div>
+                      </div>
+                      {isSaved ? (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          Saved
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <p className="text-gray-500 text-sm">No appointments available.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          {!selectedAppointmentId ? (
+            <div className="rounded-xl border border-slate-200 p-6 text-center text-slate-600">
+              Select an appointment to start writing a prescription.
+            </div>
+          ) : (
+            <div className="rounded-xl border border-slate-200 p-6 space-y-4">
+              <div>
+                <div className="font-semibold text-gray-900">Prescription Form</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Patient: {selectedAppointment?.patientName || 'Unknown'} • {selectedAppointment?.date}{' '}
+                  at {selectedAppointment?.time}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prescription Notes
+                </label>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Write medicines, dosage, instructions, and any notes..."
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Prescription'}
+                </button>
+                {savedByAppointmentId[selectedAppointmentId] ? (
+                  <span className="text-sm text-green-700">Already saved (this session).</span>
+                ) : null}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                Placeholder: will store the text in prescription records linked to the appointment.
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Doctor Overview Component
 function DoctorOverview({ appointments, slots, doctor }: any) {
-  const { t } = useTranslation();
   const router = useRouter();
   
+  const availableSlots = (slots || []).filter((s: any) => !s.isBooked);
+
   const todayAppointments = appointments.filter((apt: any) => {
     const aptDate = new Date(apt.date).toDateString();
     const today = new Date().toDateString();
@@ -236,7 +385,7 @@ function DoctorOverview({ appointments, slots, doctor }: any) {
           <div className="text-green-100">Today's Appointments</div>
         </div>
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-          <div className="text-2xl font-bold">{slots.length}</div>
+          <div className="text-2xl font-bold">{availableSlots.length}</div>
           <div className="text-purple-100">Available Slots</div>
         </div>
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
@@ -257,6 +406,9 @@ function DoctorOverview({ appointments, slots, doctor }: any) {
                     <p className="font-medium text-gray-900">
                       Patient: {appointment.patientName || 'Unknown'}
                     </p>
+                    {appointment.patientEmail ? (
+                      <p className="text-xs text-gray-500">Email: {appointment.patientEmail}</p>
+                    ) : null}
                     <p className="text-sm text-gray-600">{appointment.reason}</p>
                     <p className="text-xs text-gray-500">{appointment.date} at {appointment.time}</p>
                   </div>
@@ -288,7 +440,6 @@ function DoctorOverview({ appointments, slots, doctor }: any) {
 
 // Appointments List Component
 function AppointmentsList({ appointments, doctorId, onUpdate }: any) {
-  const { t } = useTranslation();
   const router = useRouter();
   
   return (
@@ -303,6 +454,9 @@ function AppointmentsList({ appointments, doctorId, onUpdate }: any) {
                   <p className="font-medium text-gray-900">
                     Patient: {appointment.patientName || 'Unknown'}
                   </p>
+                  {appointment.patientEmail ? (
+                    <p className="text-xs text-gray-500">Email: {appointment.patientEmail}</p>
+                  ) : null}
                   <p className="text-sm text-gray-600">{appointment.reason}</p>
                   <p className="text-xs text-gray-500">{appointment.date} at {appointment.time}</p>
                   {appointment.symptoms && (
@@ -344,9 +498,14 @@ function AppointmentsList({ appointments, doctorId, onUpdate }: any) {
 
 // Slot Management Component
 function SlotManagement({ doctorId, slots, onUpdate }: any) {
-  const { t } = useTranslation();
+  const availableSlots = (slots || []).filter((s: any) => !s.isBooked);
+  const bookedSlots = (slots || []).filter((s: any) => s.isBooked);
+
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [newSlot, setNewSlot] = useState({ date: '', time: '' });
+
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [editingSlot, setEditingSlot] = useState({ date: '', time: '' });
 
   const handleAddSlot = async () => {
     try {
@@ -380,10 +539,51 @@ function SlotManagement({ doctorId, slots, onUpdate }: any) {
     }
   };
 
+  const getSlotId = (slot: any) => {
+    // Prefer Mongoose virtual `id`, then raw `_id`, then a deterministic fallback.
+    const raw =
+      slot?.id ||
+      slot?._id?.toString?.() ||
+      slot?._id ||
+      `${slot?.doctorId || ''}_${slot?.date || ''}_${slot?.time || ''}`;
+
+    if (typeof raw === 'string') return raw;
+    return raw?.toString?.() || String(raw);
+  };
+
+  const handleStartEdit = (slot: any) => {
+    setEditingSlotId(getSlotId(slot));
+    setEditingSlot({ date: slot.date || '', time: slot.time || '' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSlotId(null);
+    setEditingSlot({ date: '', time: '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingSlotId) return;
+
+    try {
+      const response = await fetch(`/api/slots/${editingSlotId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: editingSlot.date, time: editingSlot.time }),
+      });
+
+      if (response.ok) {
+        handleCancelEdit();
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating slot:', error);
+    }
+  };
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Manage Available Slots</h3>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-lg font-semibold text-gray-900">Slot Management</h3>
         <button
           onClick={() => setShowAddSlot(true)}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
@@ -393,7 +593,7 @@ function SlotManagement({ doctorId, slots, onUpdate }: any) {
       </div>
 
       {showAddSlot && (
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+        <div className="bg-gray-50 rounded-lg p-4">
           <div className="grid grid-cols-2 gap-4">
             <input
               type="date"
@@ -427,31 +627,106 @@ function SlotManagement({ doctorId, slots, onUpdate }: any) {
         </div>
       )}
 
-      <div className="space-y-3">
-        {slots.length > 0 ? (
-          slots.map((slot: any) => (
-            <div key={slot.id} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-gray-900">{slot.date}</p>
-                  <p className="text-sm text-gray-600">{slot.time}</p>
-                  <p className={`text-xs ${slot.isBooked ? 'text-red-600' : 'text-green-600'}`}>
-                    {slot.isBooked ? 'Booked' : 'Available'}
-                  </p>
+      <div>
+        <h4 className="text-md font-semibold text-gray-900 mb-3">Available Slots</h4>
+        {availableSlots.length > 0 ? (
+          <div className="space-y-3">
+            {availableSlots.map((slot: any) => {
+              const slotId = getSlotId(slot);
+              return (
+                <div key={slotId} className="border border-gray-200 rounded-lg p-4">
+                  {editingSlotId === slotId ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={editingSlot.date}
+                        onChange={(e) =>
+                          setEditingSlot((prev) => ({ ...prev, date: e.target.value }))
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        type="time"
+                        value={editingSlot.time}
+                        onChange={(e) =>
+                          setEditingSlot((prev) => ({ ...prev, time: e.target.value }))
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveEdit}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                  ) : (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-gray-900">{slot.date}</p>
+                      <p className="text-sm text-gray-600">{slot.time}</p>
+                      <p className="text-xs text-green-600">Available</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleStartEdit(slot)}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSlot(slotId)}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  )}
                 </div>
-                {!slot.isBooked && (
-                  <button
-                    onClick={() => handleDeleteSlot(slot.id)}
-                    className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
+              );
+            })}
+          </div>
         ) : (
-          <p className="text-gray-500 text-center py-8">No slots available</p>
+          <p className="text-gray-500 text-center py-8">No available slots</p>
+        )}
+      </div>
+
+      <div>
+        <h4 className="text-md font-semibold text-gray-900 mb-3">Booked Slots</h4>
+        {bookedSlots.length > 0 ? (
+          <div className="space-y-3">
+            {bookedSlots.map((slot: any) => {
+              const slotId = getSlotId(slot);
+              return (
+                <div
+                  key={slotId}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-900">{slot.date}</p>
+                    <p className="text-sm text-gray-600">{slot.time}</p>
+                    <p className="text-xs text-red-600">Booked</p>
+                  </div>
+                  <span className="text-xs text-gray-400">Locked</span>
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">No booked slots yet</p>
         )}
       </div>
     </div>
@@ -460,35 +735,167 @@ function SlotManagement({ doctorId, slots, onUpdate }: any) {
 
 // Doctor Profile Component
 function DoctorProfile({ doctor }: any) {
-  const { t } = useTranslation();
-  
+  const [localDoctor, setLocalDoctor] = useState(doctor);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: doctor?.name || '',
+    specialization: doctor?.specialization || '',
+    experience: String(doctor?.experience ?? 0),
+    consultationFee: String(doctor?.consultationFee ?? 0),
+  });
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('/api/doctor/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          specialization: formData.specialization,
+          experience: Number(formData.experience),
+          consultationFee: Number(formData.consultationFee),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLocalDoctor(data.doctor || doctor);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error saving doctor profile:', error);
+    }
+  };
+
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Profile</h3>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <p className="mt-1 text-gray-900">Dr. {doctor.name}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-gray-900">{doctor.email}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">{t('specialization')}</label>
-            <p className="mt-1 text-gray-900">{doctor.specialization || 'Not specified'}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">{t('experience')}</label>
-            <p className="mt-1 text-gray-900">{doctor.experience || 0} years</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">{t('consultationFee')}</label>
-            <p className="mt-1 text-gray-900">₹{doctor.consultationFee || 0}</p>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Professional Profile</h3>
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+          >
+            Edit Profile
+          </button>
+        ) : null}
+      </div>
+
+      {!isEditing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <p className="mt-1 text-gray-900">Dr. {localDoctor?.name}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <p className="mt-1 text-gray-900">{localDoctor?.email}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Specialization</label>
+              <p className="mt-1 text-gray-900">
+                {localDoctor?.specialization || 'Not specified'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Experience</label>
+              <p className="mt-1 text-gray-900">{localDoctor?.experience || 0} years</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Consultation Fee
+              </label>
+              <p className="mt-1 text-gray-900">₹{localDoctor?.consultationFee || 0}</p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={localDoctor?.email || ''}
+                disabled
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Specialization
+              </label>
+              <input
+                type="text"
+                value={formData.specialization}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, specialization: e.target.value }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.experience}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, experience: e.target.value }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Consultation Fee
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.consultationFee}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, consultationFee: e.target.value }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div className="flex space-x-2">
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setFormData({
+                  name: doctor?.name || '',
+                  specialization: doctor?.specialization || '',
+                  experience: String(doctor?.experience ?? 0),
+                  consultationFee: String(doctor?.consultationFee ?? 0),
+                });
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
