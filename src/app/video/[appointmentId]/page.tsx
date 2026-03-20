@@ -11,6 +11,7 @@ export default function VideoAppointmentPage() {
 
   const appointmentId = params?.appointmentId;
 
+  // Loading state
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -22,11 +23,15 @@ export default function VideoAppointmentPage() {
     );
   }
 
-  if (!session?.user?.role) {
+  // Validate role safely
+  const role = session?.user?.role;
+
+  if (role !== 'doctor' && role !== 'patient') {
     router.push('/');
     return null;
   }
 
+  // Validate appointment ID
   if (!appointmentId || typeof appointmentId !== 'string') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -38,11 +43,14 @@ export default function VideoAppointmentPage() {
   return (
     <VideoCallScreen
       appointmentId={appointmentId}
-role={session.user.role as 'patient' | 'doctor'}      onEndCall={() => {
-        if (session.user.role === 'doctor') router.push('/doctor/dashboard');
-        else router.push('/patient/dashboard');
+      role={role}
+      onEndCall={() => {
+        if (role === 'doctor') {
+          router.push('/doctor/dashboard');
+        } else {
+          router.push('/patient/dashboard');
+        }
       }}
     />
   );
 }
-
