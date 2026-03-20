@@ -5,13 +5,26 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import DashboardShell from '@/components/layout/DashboardShell';
-
+type Appointment = {
+  id?: string;
+  _id?: string;
+  status: string;
+  doctor?: {
+    name?: string;
+  };
+  patientName?: string;
+  patientEmail?: string;
+  date: string;
+  time: string;
+  reason: string;
+  symptoms?: string[];
+  callStartTime?: string;
+};
 export default function DoctorDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
-  const [appointments, setAppointments] = useState([]);
-  const [slots, setSlots] = useState([]);
+const [appointments, setAppointments] = useState<Appointment[]>([]);  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Redirect if not authenticated or not a doctor
