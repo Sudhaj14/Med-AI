@@ -154,7 +154,7 @@ export default function DoctorDashboard() {
                     </div>
                   ))}
                 
-                {appointments.filter(apt => apt.status === 'in-progress').length === 0 && (
+                {appointments.filter(apt => apt.status === 'in_progress').length === 0 && (
                   <div className="text-center py-4">
                     <p className="text-slate-500">No active calls</p>
                   </div>
