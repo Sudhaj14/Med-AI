@@ -75,14 +75,21 @@ export function useVideoCall({ appointmentId, role }: UseVideoCallOptions) {
   const initializeSocket = useCallback(async () => {
     if (socketRef.current?.connected) return socketRef.current;
 
-    const signalingUrl =
-      process.env.NEXT_PUBLIC_SIGNALING_URL || 'http://localhost:5000';
+    const signalingUrl = (
+      process.env.NEXT_PUBLIC_SIGNALING_URL || 'http://localhost:5000'
+    ).replace(/\/$/, '');
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[videoConsultation] Connecting to signaling server:', signalingUrl);
+    }
+      
 
     const socket =
       socketRef.current ??
       io(signalingUrl, {
-        transports: ['websocket'],
-        path: process.env.NEXT_PUBLIC_SIGNALING_PATH || undefined,
+        // Allow polling as a fallback in case websocket is blocked or unavailable.
+        transports: ['websocket', 'polling'],
+        path: process.env.NEXT_PUBLIC_SIGNALING_PATH || '/socket.io',
       });
 
     socketRef.current = socket;

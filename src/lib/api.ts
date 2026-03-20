@@ -1,4 +1,8 @@
-export const API_URL = 'http://localhost:5000/api';
+// Public base URL for API requests.
+// - In development it defaults to http://localhost:5000/api
+// - In production it should be provided via NEXT_PUBLIC_API_URL
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:5000/api';
 
 export const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('appointment_token');

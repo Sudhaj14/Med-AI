@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import ChatTab from '@/components/dashboard/ChatTab';
@@ -18,6 +18,32 @@ export default function PatientDashboard() {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('appointments');
 
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
+  const [prescriptionsError, setPrescriptionsError] = useState<string | null>(null);
+
+  const loadPrescriptions = async () => {
+    try {
+      setPrescriptionsLoading(true);
+      setPrescriptionsError(null);
+
+      const res = await fetch('/api/prescriptions', { method: 'GET' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to fetch prescriptions');
+      }
+
+      const data = await res.json();
+      setPrescriptions(data?.prescriptions || []);
+    } catch (err: any) {
+      console.error('Error loading prescriptions:', err);
+      setPrescriptionsError(err?.message || 'Failed to load prescriptions');
+      setPrescriptions([]);
+    } finally {
+      setPrescriptionsLoading(false);
+    }
+  };
+
   // Redirect if not authenticated or not a patient
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -26,6 +52,12 @@ export default function PatientDashboard() {
       router.push('/');
     }
   }, [status, session, router]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && (session?.user as any)?.role === 'patient') {
+      loadPrescriptions();
+    }
+  }, [status, session]);
 
   if (status === 'loading') {
     return (
@@ -49,6 +81,7 @@ export default function PatientDashboard() {
     { id: 'symptoms', label: t('symptomChecker', 'Symptom Checker'), icon: '🩺' },
     { id: 'metrics', label: t('healthMetrics', 'Health Metrics'), icon: '📈' },
     { id: 'appointments', label: t('appointments', 'Appointments'), icon: '📅' },
+    { id: 'prescriptions', label: t('prescription', 'Prescriptions'), icon: '📝' },
     { id: 'pharmacy', label: t('pharmacy', 'Pharmacy'), icon: '🏪' },
     { id: 'video', label: t('videoConsultation', 'Video Consultation'), icon: '📹' },
   ];
@@ -63,6 +96,52 @@ export default function PatientDashboard() {
         return <MetricsTab />;
       case 'appointments':
         return <AppointmentSummary />;
+      case 'prescriptions':
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="font-semibold text-slate-900">Your Prescriptions</div>
+              <div className="mt-1 text-sm text-slate-600">
+                Linked to your appointments. When the doctor saves a prescription, it will appear here.
+              </div>
+            </div>
+
+            {prescriptionsLoading ? (
+              <div className="text-center py-8 text-slate-600">Loading prescriptions...</div>
+            ) : prescriptionsError ? (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {prescriptionsError}
+              </div>
+            ) : prescriptions.length === 0 ? (
+              <div className="text-center py-8 text-slate-600">No prescriptions found.</div>
+            ) : (
+              <div className="space-y-3">
+                {prescriptions.map((p) => (
+                  <div
+                    key={p.id || p.appointmentId}
+                    className="border border-slate-200 rounded-lg p-4 bg-white"
+                  >
+                    <div className="font-medium text-gray-900">
+                      {p.appointment?.date || 'Appointment'}{' '}
+                      {p.appointment?.time ? `at ${p.appointment.time}` : ''}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      Doctor: {p.appointment?.doctor?.name || p.patientName || '—'}
+                    </div>
+                    {p.createdAt ? (
+                      <div className="text-xs text-slate-500">
+                        Saved: {new Date(p.createdAt).toLocaleString()}
+                      </div>
+                    ) : null}
+                    <div className="mt-3 text-sm text-slate-800 whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded p-3">
+                      {p.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
       case 'pharmacy':
         return <PharmacySearch />;
       case 'video':

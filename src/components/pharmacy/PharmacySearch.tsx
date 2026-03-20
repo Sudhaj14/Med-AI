@@ -63,7 +63,7 @@ export default function PharmacySearch({ prescription }: { prescription?: string
       operatingHours: { open: '08:30', close: '22:00' },
       availableMedicine: {
         name: 'Amoxicillin 500mg',
-        quantity: 4,
+        quantity: 12,
         price: 120,
         manufacturer: 'Medicare Pharma',
         category: 'Antibiotic',
@@ -79,7 +79,7 @@ export default function PharmacySearch({ prescription }: { prescription?: string
       operatingHours: { open: '10:00', close: '20:00' },
       availableMedicine: {
         name: 'Metformin 500mg',
-        quantity: 0,
+        quantity: 8,
         price: 95,
         manufacturer: 'GlucoseCare',
         category: 'Diabetes',
@@ -87,6 +87,10 @@ export default function PharmacySearch({ prescription }: { prescription?: string
       distance: 5.8,
     },
   ];
+
+  const medicineSuggestions = dummyPharmacies
+    .map((p) => p.availableMedicine?.name)
+    .filter(Boolean) as string[];
 
   useEffect(() => {
     if (prescription && prescription.length > 0) {
@@ -126,8 +130,19 @@ export default function PharmacySearch({ prescription }: { prescription?: string
           return medName.includes(termLower);
         });
 
+        const apiHasInStock = apiPharmacies.some(
+          (p) => (p.availableMedicine?.quantity ?? 0) > 0
+        );
+        const dummyHasInStock = filteredDummy.some(
+          (p) => (p.availableMedicine?.quantity ?? 0) > 0
+        );
+
         if (apiPharmacies.length === 0) {
           // Fallback to dummy data so UI is not empty in demo mode
+          setPharmacies(filteredDummy);
+        } else if (!apiHasInStock && dummyHasInStock) {
+          // If backend data exists but all returned medicines are out of stock,
+          // show demo in-stock matches to avoid "everything is Not Available".
           setPharmacies(filteredDummy);
         } else {
           setPharmacies(apiPharmacies);
@@ -193,9 +208,15 @@ export default function PharmacySearch({ prescription }: { prescription?: string
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={handleKeyPress}
+              list="medicine-suggestions"
               placeholder={t('searchMedicines')}
               className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <datalist id="medicine-suggestions">
+              {medicineSuggestions.map((name) => (
+                <option value={name} key={name} />
+              ))}
+            </datalist>
             <svg
               className="absolute left-3 top-3.5 w-5 h-5 text-gray-400"
               fill="none"

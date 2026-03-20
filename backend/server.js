@@ -1,67 +1,66 @@
-const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
-const doctorRoutes = require('./routes/doctor');
-const patientRoutes = require('./routes/patient');
+const PORT = process.env.SOCKET_PORT || process.env.PORT || 5000;
+const HOST = process.env.SOCKET_HOST || '0.0.0.0';
 
-const app = express();
-const server = http.createServer(app);
+const SOCKET_IO_PATH = process.env.SOCKET_IO_PATH || '/socket.io';
+const SOCKET_CORS_ORIGIN = process.env.SOCKET_CORS_ORIGIN || '*';
+const SOCKET_CORS_CREDENTIALS = SOCKET_CORS_ORIGIN !== '*';
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+const httpServer = http.createServer();
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/doctor', doctorRoutes);
-app.use('/api/patient', patientRoutes);
-
-// Database connection
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/medical-chatbot';
-
-// Socket.IO (WebRTC signaling)
-const io = new Server(server, {
+const io = new Server(httpServer, {
+  path: SOCKET_IO_PATH,
   cors: {
-    origin: process.env.CORS_ORIGIN || true,
+    origin: SOCKET_CORS_ORIGIN,
     methods: ['GET', 'POST'],
+    credentials: SOCKET_CORS_CREDENTIALS,
   },
+  transports: ['websocket', 'polling'],
 });
+
+function roomName(appointmentId) {
+  return `appointment:${appointmentId}`;
+}
 
 io.on('connection', (socket) => {
-  // Join per-appointment room so signaling is scoped to one session.
+  console.log(`[socket.io] connected: id=${socket.id}`);
+
   socket.on('join-appointment', ({ appointmentId, role }) => {
     if (!appointmentId) return;
-    socket.join(String(appointmentId));
-    socket.to(String(appointmentId)).emit('peer-joined', { role });
+    const room = roomName(appointmentId);
+    socket.data.appointmentId = appointmentId;
+    socket.data.role = role;
+    socket.join(room);
+    console.log(
+      `[socket.io] join-appointment: id=${socket.id} room=${room} role=${role || 'unknown'}`
+    );
   });
 
-  // Relay WebRTC SDP/ICE payloads between doctor/patient in same room.
+  socket.on('leave-appointment', ({ appointmentId }) => {
+    if (!appointmentId) return;
+    const room = roomName(appointmentId);
+    socket.leave(room);
+    console.log(`[socket.io] leave-appointment: id=${socket.id} room=${room}`);
+  });
+
   socket.on('signal', ({ appointmentId, signalData, senderRole }) => {
     if (!appointmentId || !signalData) return;
-    socket.to(String(appointmentId)).emit('signal', { signalData, senderRole });
+    const room = roomName(appointmentId);
+
+    // Forward to everyone else in the room (client also filters by senderRole).
+    socket.to(room).emit('signal', { signalData, senderRole });
   });
 
-  socket.on('leave-appointment', ({ appointmentId, role }) => {
-    if (!appointmentId) return;
-    socket.leave(String(appointmentId));
-    socket.to(String(appointmentId)).emit('peer-left', { role });
+  socket.on('disconnect', (reason) => {
+    console.log(`[socket.io] disconnected: id=${socket.id} reason=${reason}`);
   });
 });
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
+httpServer.listen(PORT, HOST, () => {
+  console.log(
+    `[socket.io] server listening on ${HOST}:${PORT} path=${SOCKET_IO_PATH}`
+  );
+});
+

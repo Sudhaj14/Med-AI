@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -204,6 +204,46 @@ function PrescriptionsTab({ appointments, doctorId }: any) {
   );
   const [saving, setSaving] = useState(false);
 
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
+  const [prescriptionsError, setPrescriptionsError] = useState<string | null>(null);
+
+  const loadPrescriptions = async () => {
+    try {
+      setPrescriptionsLoading(true);
+      setPrescriptionsError(null);
+
+      const res = await fetch('/api/prescriptions', { method: 'GET' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to fetch prescriptions');
+      }
+
+      const data = await res.json();
+      const nextPrescriptions = data?.prescriptions || [];
+      setPrescriptions(nextPrescriptions);
+
+      // Keep the "Saved" badges in sync with DB records.
+      const byAppointmentId: Record<string, boolean> = {};
+      nextPrescriptions.forEach((p: any) => {
+        const key = p?.appointmentId?.toString?.() || p?.appointmentId;
+        if (key) byAppointmentId[key] = true;
+      });
+      setSavedByAppointmentId(byAppointmentId);
+    } catch (err: any) {
+      console.error('Error loading prescriptions:', err);
+      setPrescriptionsError(err?.message || 'Failed to load prescriptions');
+      setPrescriptions([]);
+    } finally {
+      setPrescriptionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Load doctor prescriptions when the tab mounts.
+    loadPrescriptions();
+  }, [doctorId]);
+
   const candidateAppointments = (appointments || []).filter(
     (a: any) => a.status === 'scheduled' || a.status === 'completed'
   );
@@ -235,6 +275,7 @@ function PrescriptionsTab({ appointments, doctorId }: any) {
       if (response.ok) {
         setSavedByAppointmentId((p) => ({ ...p, [selectedAppointmentId]: true }));
         setDraft('');
+        await loadPrescriptions();
         alert('Prescription saved to records.');
       } else {
         const data = await response.json().catch(() => ({}));
@@ -352,6 +393,57 @@ function PrescriptionsTab({ appointments, doctorId }: any) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="font-semibold text-slate-900">Saved Prescriptions</div>
+        <div className="mt-1 text-sm text-slate-600">
+          These are your previously saved prescriptions (linked to appointments).
+        </div>
+
+        {prescriptionsLoading ? (
+          <div className="text-center py-6 text-slate-600">Loading...</div>
+        ) : prescriptionsError ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mt-4">
+            {prescriptionsError}
+          </div>
+        ) : prescriptions.length === 0 ? (
+          <div className="text-center py-6 text-slate-600">No prescriptions saved yet.</div>
+        ) : (
+          <div className="space-y-3 mt-4">
+            {prescriptions.map((p) => (
+              <div key={p.id || p.appointmentId} className="border border-slate-200 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-medium text-slate-900">
+                      {p.patientName || 'Patient'}{' '}
+                      {p.appointment?.date ? `• ${p.appointment.date}` : ''}
+                      {p.appointment?.time ? ` at ${p.appointment.time}` : ''}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Saved: {p.createdAt ? new Date(p.createdAt).toLocaleString() : '—'}
+                    </div>
+                  </div>
+                  <button
+                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    onClick={() => {
+                      if (p.appointmentId) {
+                        setSelectedAppointmentId(p.appointmentId);
+                        setDraft(p.content || '');
+                      }
+                    }}
+                  >
+                    Open
+                  </button>
+                </div>
+
+                <div className="mt-3 text-sm text-slate-800 whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded p-3">
+                  {p.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
